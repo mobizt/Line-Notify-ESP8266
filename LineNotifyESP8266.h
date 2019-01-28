@@ -36,15 +36,15 @@
 #include <ESP8266WiFi.h>
 #include <FS.h>
 
-class LineNotifyESP8266 {
-
-   struct LineStatus {
+class LineNotifyESP8266 {   
+	
+  public:
+  
+  struct LineStatus {
       static const uint8_t SENT_COMPLETED = 0;
       static const uint8_t SENT_FAILED = 1;
       static const uint8_t CONNECTION_FAILED = 2;
-    };
-	
-  public:
+   };
    
    /**
    * The LINE Notify Service's credentials initialization.
