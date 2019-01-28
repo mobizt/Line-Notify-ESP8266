@@ -62,13 +62,13 @@ class LineNotifyESP8266 {
    * Set the LINE Notify token string.
    * \param token - Your LINE Notify token string (constant chars array).
    */
-    void set_token(const char* token);
+    void setToken(const char* token);
 	
    /**
    * Set the LINE Notify token string.
    * \param token - Your LINE Notify token String.
    */
-    void set_token(const String token);
+    void setToken(const String token);
 	
    /**
    * Send text message.
