@@ -44,12 +44,12 @@ void LineNotifyESP8266::init(const String token) {
   init(token.c_str());
 }
 
-void LineNotifyESP8266::set_token(const char* token) {
+void LineNotifyESP8266::setToken(const char* token) {
   memset(LINE_TOKEN, 0, sizeof LINE_TOKEN);
   strcpy(LINE_TOKEN, token);
 }
 
-void LineNotifyESP8266::set_token(const String token) {
+void LineNotifyESP8266::setToken(const String token) {
   set_token(token.c_str());
 }
 
