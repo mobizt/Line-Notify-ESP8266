@@ -52,15 +52,36 @@ void setup() {
 
   //lineNotify.setToken(LINE_TOKEN);  
 
-  lineNotify.sendLineMessage(client,"Hello!");
+  uint8_t status;
 
-  lineNotify.sendLineImageData(client,"This is the image from memory", "image.jpg", dummyImageData, sizeof(dummyImageData));
+  status =  lineNotify.sendLineMessage(client, "Hello!");
+  if (status == LineNotifyESP8266::LineStatus::SENT_COMPLETED) Serial.println("Send text message completed");
+  else if (status == LineNotifyESP8266::LineStatus::SENT_FAILED) Serial.println("Send text message was failed!");
+  else if (status == LineNotifyESP8266::LineStatus::CONNECTION_FAILED) Serial.println("Connection to LINE sevice faild!");
 
-  lineNotify.sendLineSticker(client,"Goodbye", 2,157);
 
-  lineNotify.sendLineImageURL(client,"This is image I found on web.","https://cdn.pixabay.com/photo/2017/05/17/18/35/sewing-2321532_640.jpg");
+  status = lineNotify.sendLineImageData(client, "This is the image from memory", "image.jpg", dummyImageData, sizeof(dummyImageData));
+  if (status == LineNotifyESP8266::LineStatus::SENT_COMPLETED) Serial.println("send image data completed");
+  else if (status == LineNotifyESP8266::LineStatus::SENT_FAILED) Serial.println("Send image data was failed!");
+  else if (status == LineNotifyESP8266::LineStatus::CONNECTION_FAILED) Serial.println("Connection to LINE sevice faild!");
 
-  lineNotify.sendLineImageSPIF(client,"This image from device", "/sewing.jpg");
+
+  status = lineNotify.sendLineSticker(client, "Goodbye", 2, 157);
+  if (status == LineNotifyESP8266::LineStatus::SENT_COMPLETED) Serial.println("Send sticker completed");
+  else if (status == LineNotifyESP8266::LineStatus::SENT_FAILED) Serial.println("Send sticker was failed!");
+  else if (status == LineNotifyESP8266::LineStatus::CONNECTION_FAILED) Serial.println("Connection to LINE sevice faild!");
+
+
+  status = lineNotify.sendLineImageURL(client, "This is image I found on web.", "https://cdn.pixabay.com/photo/2017/05/17/18/35/sewing-2321532_640.jpg");
+  if (status == LineNotifyESP8266::LineStatus::SENT_COMPLETED) Serial.println("Send image URL completed");
+  else if (status == LineNotifyESP8266::LineStatus::SENT_FAILED) Serial.println("Send image URL failed!");
+  else if (status == LineNotifyESP8266::LineStatus::CONNECTION_FAILED) Serial.println("Connection to LINE sevice faild!");
+
+
+  status = lineNotify.sendLineImageSPIF(client, "This image from device", "/sewing.jpg");
+  if (status == LineNotifyESP8266::LineStatus::SENT_COMPLETED) Serial.println("Send image from SPIFS file completed");
+  else if (status == LineNotifyESP8266::LineStatus::SENT_FAILED) Serial.println("Send image from SPIFS was failed!");
+  else if (status == LineNotifyESP8266::LineStatus::CONNECTION_FAILED) Serial.println("Connection to LINE sevice faild!");
 
 
 }
