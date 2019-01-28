@@ -110,7 +110,7 @@ Able send text, sticker and image message to LINE Notify services.
    * \param msg - The text message to be send (constant chars array).
    * \param imageURL - The image URL (constant chars array).
    */
-	uint8_t sendLineImageURL(WiFiClientSecure &client, const char* msg, const char* imageURL);
+   uint8_t sendLineImageURL(WiFiClientSecure &client, const char* msg, const char* imageURL);
 	
    /**
    * Send Image message. The image data from web URL
@@ -118,7 +118,7 @@ Able send text, sticker and image message to LINE Notify services.
    * \param msg - The text message String to be send.
    * \param imageURL - The image URL String.
    */
-	uint8_t sendLineImageURL(WiFiClientSecure &client, const String msg, const String imageURL);
+   uint8_t sendLineImageURL(WiFiClientSecure &client, const String msg, const String imageURL);
 	
 	
    /**
