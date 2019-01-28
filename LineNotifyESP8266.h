@@ -86,7 +86,7 @@ class LineNotifyESP8266 {
     uint8_t sendLineMessage(WiFiClientSecure &client, const String msg);
 	
    /**
-   * Send text message.
+   * Send text message with sticker.
    * \param client - SSL WiFi client from WiFiClientSecure initialization.
    * \param msg - The text message to be send (constant chars array).
    * \param stickerPackageId - Sticker Package ID number to send, 
@@ -97,7 +97,7 @@ class LineNotifyESP8266 {
     uint8_t sendLineSticker(WiFiClientSecure &client, const char* msg, uint16_t  stickerPackageId, uint16_t stickerId);
 	
    /**
-   * Send text message.
+   * Send text message with sticker.
    * \param client - SSL WiFi client from WiFiClientSecure initialization.
    * \param msg - The text message String to be send.
    * \param stickerPackageId - Sticker Package ID number to send, 
