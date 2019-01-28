@@ -50,7 +50,7 @@ void LineNotifyESP8266::setToken(const char* token) {
 }
 
 void LineNotifyESP8266::setToken(const String token) {
-  set_token(token.c_str());
+  setToken(token.c_str());
 }
 
 void LineNotifyESP8266::send_request_header(WiFiClientSecure &client, const char* token, size_t contentLength) {
