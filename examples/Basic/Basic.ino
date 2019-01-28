@@ -14,8 +14,12 @@
 
 
 #include <FS.h>
-#include "image.h"
 #include "LineNotifyESP8266.h"
+
+//Include for use in this demo only
+#include "image.h"
+
+
 
 
 #define WIFI_SSID "YOUR_WIFI_AP"
