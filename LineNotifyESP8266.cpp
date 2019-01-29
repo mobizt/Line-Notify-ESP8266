@@ -445,17 +445,6 @@ bool LineNotifyESP8266::waitLineResponse(WiFiClientSecure &client) {
 }
 
 
-
-uint16_t LineNotifyESP8266::strpos(const char *haystack, const char *needle, int offset)
-{
-  char _haystack[strlen(haystack)];
-  strncpy(_haystack, haystack + offset, strlen(haystack) - offset);
-  char *p = strstr(_haystack, needle);
-  if (p)
-    return p - _haystack + offset + 1;
-  return -1;
-}
-
 char* LineNotifyESP8266::getContentType(const char* filename) {
 
   char buf[30];
@@ -477,6 +466,75 @@ char* LineNotifyESP8266::getContentType(const char* filename) {
     return buf;
   }
   return buf;
+}
+
+uint16_t LineNotifyESP8266::textMessageLimit(void){
+  return _textLimit;
+}
+
+uint16_t LineNotifyESP8266::textMessageRemaining(void){
+  return _textRemaining;
+}
+
+uint16_t LineNotifyESP8266::imageMessageLimit(void){
+  return _imageLimit;
+}
+
+uint16_t LineNotifyESP8266::imageMessageRemaining(void){
+  return _imageRemaining;
+}
+
+void LineNotifyESP8266::strcat_c (char *str, char c)
+{
+  for (; *str; str++);
+  *str++ = c;
+  *str++ = 0;
+}
+int LineNotifyESP8266::strpos(const char *haystack, const char *needle, int offset)
+{
+  char _haystack[strlen(haystack)];
+  strncpy(_haystack, haystack + offset, strlen(haystack) - offset);
+  char *p = strstr(_haystack, needle);
+  if (p)
+    return p - _haystack + offset + 1;
+  return -1;
+}
+
+int LineNotifyESP8266::rstrpos(const char *haystack, const char *needle, int offset)
+{
+  char _haystack[strlen(haystack)];
+  strncpy(_haystack, haystack + offset, strlen(haystack) - offset);
+  char *p = rstrstr(_haystack, needle);
+  if (p)
+    return p - _haystack + offset + 1;
+  return -1;
+}
+char* LineNotifyESP8266::rstrstr(const char* haystack, const char* needle)
+{
+  int needle_length = strlen(needle);
+  const char* haystack_end = haystack + strlen(haystack) - needle_length;
+  const char* p;
+  size_t i;
+  for (p = haystack_end; p >= haystack; --p)
+  {
+    for (i = 0; i < needle_length; ++i) {
+      if (p[i] != needle[i])
+        goto next;
+    }
+    return (char*)p;
+next:;
+  }
+  return 0;
+}
+char* LineNotifyESP8266::replace_char(char* str, char in, char out)
+{
+  char * p = str;
+  while (p != '\0') {
+    if (*p == in)
+      *p == out;
+    ++p;
+  }
+  return str;
 }
 
 LineNotifyESP8266 lineNotify = LineNotifyESP8266();
