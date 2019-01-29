@@ -246,6 +246,7 @@ uint8_t LineNotifyESP8266::sendLineImageData(WiFiClientSecure &client, const cha
       imageData += chunkSize;
       byteRead = imageLength;
     }
+    yield();
   }
 
   client.print(newline);
@@ -361,6 +362,7 @@ uint8_t LineNotifyESP8266::sendLineImageSPIF(WiFiClientSecure &client, const cha
         byteRead = imageLength;
         break;
       }
+      yield();
     }
 
     file.close();
