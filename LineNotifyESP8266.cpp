@@ -441,7 +441,7 @@ bool LineNotifyESP8266::waitLineResponse(WiFiClientSecure &client) {
       }
     }
   }
-  return httpCode==HTTP_CODE_OK;
+  return httpCode==200;
 }
 
 
