@@ -384,29 +384,66 @@ uint8_t LineNotifyESP8266::sendLineImageSPIF(WiFiClientSecure &client, const Str
   return sendLineImageSPIF(client, msg, filePath);
 }
 
-bool LineNotifyESP8266::waitLineResponse(WiFiClientSecure & client) {
+bool LineNotifyESP8266::waitLineResponse(WiFiClientSecure &client) {
 
-  char response[100];
-  long timeout = millis() + LINE_TIMEOUT;
-  while (client.connected() && timeout > millis())
-  {
-    delay(1);
-    if (client.available())
-    {
+  char response[200];
+   char res[200];
+  memset(response, 0, sizeof response);
+  long dataTime = millis();
 
-      memset(response, 0, sizeof response);
-      strcpy(response, client.readStringUntil('\r').c_str());
-      if (strpos(response, "\"status\"", 0) != -1)
-      {
-        client.stop();
-        return true;
+  uint16_t count = 0;
+  char c;
+  int p1, p2, len;
+
+  int httpCode = -1000;
+  _textLimit = 0;
+  _textRemaining = 0;
+  _imageLimit = 0;
+  _imageRemaining = 0;
+
+  while (client.connected() && !client.available() && millis() - dataTime < 5000) delay(1);
+
+  dataTime = millis();
+  if (client.connected() && client.available()) {
+    while (client.available() &&  millis() - dataTime < 5000) {
+      c = client.read();
+      if (count < sizeof(response) - 1 && c != '\n') {
+        strcat_c(response, c);
+        count++;
+      } else {
+		
+        dataTime = millis();
+        if (strlen(response) > 0) {
+          if (strpos(response, "HTTP/1.1", 0) != -1) {
+            p1 = strpos(response, " ", 0);
+            len = rstrpos(response, " ", 0) - p1 - 1;
+            memset(res, 0, sizeof res);
+            strncpy(res, response + p1, len);
+            httpCode = atoi(res);
+          } else if (strpos(response, ":", 0) != -1) {
+            p1 = strpos(response, ":", 0);
+            if (p1 < strlen(response) - 1) {
+              len = strlen(response) - p1;
+              memset(res, 0, sizeof res);
+              strncpy(res, response + p1, len);
+
+              //Parses for headers and payload
+              if (strpos(response, "X-RateLimit-Limit", 0) != -1) _textLimit = atoi(res);
+              else if (strpos(response, "X-RateLimit-ImageLimit", 0) != -1) _imageLimit = atoi(res);
+			        else if (strpos(response, "X-RateLimit-Remaining", 0) != -1) _textRemaining = atoi(res);
+			        else if (strpos(response, "X-RateLimit-ImageRemaining", 0) != -1) _imageRemaining = atoi(res);
+
+            }
+          }
+        }
+        memset(response, 0, sizeof response);
+        count = 0;
       }
     }
   }
-
-  client.stop();
-  return false;
+  return httpCode==HTTP_CODE_OK;
 }
+
 
 
 uint16_t LineNotifyESP8266::strpos(const char *haystack, const char *needle, int offset)
