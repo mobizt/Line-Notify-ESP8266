@@ -39,18 +39,19 @@ Able send text, sticker and image message to LINE Notify services.
    * Set the LINE Notify token string.
    * \param token - Your LINE Notify token string (constant chars array).
    */
-    void set_token(const char* token);
+    void setToken(const char* token);
 	
    /**
    * Set the LINE Notify token string.
    * \param token - Your LINE Notify token String.
    */
-    void set_token(const String token);
+    void setToken(const String token);
 	
    /**
    * Send text message.
    * \param client - SSL WiFi client from WiFiClientSecure initialization.
    * \param msg - The text message to be send (constant chars array).
+   * \return The LineStatus struct value, SENT_COMPLETED = 0, SENT_FAILED = 1, CONNECTION_FAILED = 2.
    */
     uint8_t sendLineMessage(WiFiClientSecure &client, const char* msg);
 	
@@ -59,6 +60,7 @@ Able send text, sticker and image message to LINE Notify services.
    * Send text message.
    * \param client - SSL WiFi client from WiFiClientSecure initialization.
    * \param msg - The text message String to be send.
+   * \return The LineStatus struct value, SENT_COMPLETED = 0, SENT_FAILED = 1, CONNECTION_FAILED = 2.
    */
     uint8_t sendLineMessage(WiFiClientSecure &client, const String msg);
 	
@@ -70,6 +72,7 @@ Able send text, sticker and image message to LINE Notify services.
    * see https://devdocs.line.me/files/sticker_list.pdf for STKPKGID
    * \param stickerId - Sticker ID number to send, see 
    * https://devdocs.line.me/files/sticker_list.pdf for STKID
+   * \return The LineStatus struct value, SENT_COMPLETED = 0, SENT_FAILED = 1, CONNECTION_FAILED = 2.
    */
     uint8_t sendLineSticker(WiFiClientSecure &client, const char* msg, uint16_t  stickerPackageId, uint16_t stickerId);
 	
@@ -81,6 +84,7 @@ Able send text, sticker and image message to LINE Notify services.
    * see https://devdocs.line.me/files/sticker_list.pdf for STKPKGID
    * \param stickerId - Sticker ID number to send, see 
    * https://devdocs.line.me/files/sticker_list.pdf for STKID
+   * \return The LineStatus struct value, SENT_COMPLETED = 0, SENT_FAILED = 1, CONNECTION_FAILED = 2.
    */
     uint8_t sendLineSticker(WiFiClientSecure &client, const String msg, uint16_t  stickerPackageId, uint16_t stickerId);
 	
@@ -90,7 +94,8 @@ Able send text, sticker and image message to LINE Notify services.
    * \param msg - The text message to be send (constant chars array).
    * \param fileName - The user's specified file name (constant chars array).
    * \param imageData - The byte data of image from memory or EEPROM.
-   * \param imageLength - The byte length of image data.   
+   * \param imageLength - The byte length of image data. 
+   * \return The LineStatus struct value, SENT_COMPLETED = 0, SENT_FAILED = 1, CONNECTION_FAILED = 2.
    */
     uint8_t sendLineImageData(WiFiClientSecure &client, const char* msg, const char* fileName, uint8_t* imageData, size_t imageLength);
     
@@ -100,7 +105,8 @@ Able send text, sticker and image message to LINE Notify services.
    * \param msg - The text message String to be send.
    * \param fileName - The user's specified file name String.
    * \param imageData - The byte data of image from memory or EEPROM.
-   * \param imageLength - The byte length of image data.   
+   * \param imageLength - The byte length of image data.
+   * \return The LineStatus struct value, SENT_COMPLETED = 0, SENT_FAILED = 1, CONNECTION_FAILED = 2.
    */
     uint8_t sendLineImageData(WiFiClientSecure &client, const String msg, const String fileName, uint8_t* imageData, size_t imageLength);
     
@@ -109,6 +115,7 @@ Able send text, sticker and image message to LINE Notify services.
    * \param client - SSL WiFi client from WiFiClientSecure initialization.
    * \param msg - The text message to be send (constant chars array).
    * \param imageURL - The image URL (constant chars array).
+   * \return The LineStatus struct value, SENT_COMPLETED = 0, SENT_FAILED = 1, CONNECTION_FAILED = 2.
    */
    uint8_t sendLineImageURL(WiFiClientSecure &client, const char* msg, const char* imageURL);
 	
@@ -117,6 +124,7 @@ Able send text, sticker and image message to LINE Notify services.
    * \param client - SSL WiFi client from WiFiClientSecure initialization.
    * \param msg - The text message String to be send.
    * \param imageURL - The image URL String.
+   * \return The LineStatus struct value, SENT_COMPLETED = 0, SENT_FAILED = 1, CONNECTION_FAILED = 2.
    */
    uint8_t sendLineImageURL(WiFiClientSecure &client, const String msg, const String imageURL);
 	
@@ -126,6 +134,7 @@ Able send text, sticker and image message to LINE Notify services.
    * \param client - SSL WiFi client from WiFiClientSecure initialization.
    * \param msg - The text message to be send (constant chars array).
    * \param filePath - The image file name and path inside SPIF (constant chars array).
+   * \return The LineStatus struct value, SENT_COMPLETED = 0, SENT_FAILED = 1, CONNECTION_FAILED = 2.
    */
     uint8_t sendLineImageSPIF(WiFiClientSecure &client, const char* msg, const char* filePath);
 	
@@ -134,9 +143,33 @@ Able send text, sticker and image message to LINE Notify services.
    * \param client - SSL WiFi client from WiFiClientSecure initialization.
    * \param msg - The text message String to be send.
    * \param filePath - The image file name and path String inside SPIF.
+   * \return The LineStatus struct value, SENT_COMPLETED = 0, SENT_FAILED = 1, CONNECTION_FAILED = 2.
    */
     uint8_t sendLineImageSPIF(WiFiClientSecure &client, const String msg, const String filePath);
+	
+   /**
+   * Get the text message limit
+   * \return The limit count of sending text message.
+   */
+    uint16_t textMessageLimit(void);
+	
+   /**
+   * Get the image message limit
+   * \return The limit count of sending image message.
+   */
+    uint16_t imageMessageLimit(void);
+	
+   /**
+   * Get the remaining count of sending text message
+   * \return The remaining count of sending text message.
+   */
+    uint16_t textMessageRemaining(void);
 
+   /**
+   * Get the remaining count of sending image message
+   * \return The remaining count of sending image message.
+   */
+    uint16_t imageMessageRemaining(void);
 
 ```
 
