@@ -172,7 +172,7 @@ Able send text, sticker and image message to LINE Notify services.
     uint16_t imageMessageRemaining(void);
 
 ```
-## Install
+## Installing
 
 Click on Clone or download dropdown at the top of repository, select Download ZIP and save zip file to your computer.
 
