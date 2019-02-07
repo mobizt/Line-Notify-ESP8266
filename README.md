@@ -4,6 +4,8 @@ This library provides ESP8266 to perform REST API call to LINE Notify service to
 
 The library was test and work well with ESP8266s based module.
 
+More about Line Notify service https://notify-bot.line.me/en/
+
 Copyright (c) 2019 K. Suwatchai (Mobizt).
 
 ## Tested Devices
