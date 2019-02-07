@@ -184,8 +184,5 @@ Go to menu Files -> Examples -> LINE-Notify-ESP8266-master and choose one from e
 
 ## Usages
 
-```c++
-
 See the examples
 
-```
