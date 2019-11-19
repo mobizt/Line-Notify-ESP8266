@@ -28,7 +28,6 @@
 #define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
 #define LINE_TOKEN "YOUR_LINE_NOTIFY_TOKEN"
 
-WiFiClientSecure client;
 
 bool sdOK = false;
 
@@ -50,7 +49,7 @@ void setup()
 
   //Write demo image to SD card
 
-  if (SD.begin())
+  if (SD.begin(15))
   {
     sdOK = true;
 
@@ -74,12 +73,14 @@ void setup()
     file.close();
   }
 
-  //Init Line notify with token
-  lineNotify.init(LINE_TOKEN);
+  LineNotifyHTTPClient net;
+  lineNotify.init(&net, LINE_TOKEN);
+
+  lineNotify.setSDSelectPin(15);
 
   uint8_t status;
-
-  status = lineNotify.sendLineMessage(client, "Hello!");
+  
+  status = lineNotify.sendLineMessage("Hello!");
   if (status == LineNotifyESP8266::LineStatus::SENT_COMPLETED)
   {
     Serial.println("Send text message completed");
@@ -92,9 +93,11 @@ void setup()
     Serial.println("Send text message was failed!");
   else if (status == LineNotifyESP8266::LineStatus::CONNECTION_FAILED)
     Serial.println("Connection to LINE sevice faild!");
+  else if (status == LineNotifyESP8266::LineStatus::NOT_INITIALIZED)
+    Serial.println("Line notify was not initialized!");
   Serial.println();
 
-  status = lineNotify.sendLineImageData(client, "This is the image from memory", "image.jpg", dummyImageData, sizeof(dummyImageData));
+  status = lineNotify.sendLineImageData("This is the image from memory", "image.jpg", dummyImageData, sizeof(dummyImageData));
   if (status == LineNotifyESP8266::LineStatus::SENT_COMPLETED)
   {
     Serial.println("send image data completed");
@@ -107,9 +110,11 @@ void setup()
     Serial.println("Send image data was failed!");
   else if (status == LineNotifyESP8266::LineStatus::CONNECTION_FAILED)
     Serial.println("Connection to LINE sevice faild!");
+  else if (status == LineNotifyESP8266::LineStatus::NOT_INITIALIZED)
+    Serial.println("Line notify was not initialized!");
   Serial.println();
 
-  status = lineNotify.sendLineSticker(client, "Goodbye", 2, 157);
+  status = lineNotify.sendLineSticker("Goodbye", 2, 157);
   if (status == LineNotifyESP8266::LineStatus::SENT_COMPLETED)
   {
     Serial.println("Send sticker completed");
@@ -122,9 +127,12 @@ void setup()
     Serial.println("Send sticker was failed!");
   else if (status == LineNotifyESP8266::LineStatus::CONNECTION_FAILED)
     Serial.println("Connection to LINE sevice faild!");
+  else if (status == LineNotifyESP8266::LineStatus::NOT_INITIALIZED)
+    Serial.println("Line notify was not initialized!");
   Serial.println();
 
-  status = lineNotify.sendLineImageURL(client, "This is image I found on web.", "https://cdn.pixabay.com/photo/2017/05/17/18/35/sewing-2321532_640.jpg");
+
+  status = lineNotify.sendLineImageURL("This is image I found on web.", "https://cdn.pixabay.com/photo/2017/05/17/18/35/sewing-2321532_640.jpg");
   if (status == LineNotifyESP8266::LineStatus::SENT_COMPLETED)
   {
     Serial.println("Send image URL completed");
@@ -137,9 +145,12 @@ void setup()
     Serial.println("Send image URL failed!");
   else if (status == LineNotifyESP8266::LineStatus::CONNECTION_FAILED)
     Serial.println("Connection to LINE sevice faild!");
+  else if (status == LineNotifyESP8266::LineStatus::NOT_INITIALIZED)
+    Serial.println("Line notify was not initialized!");
   Serial.println();
 
-  status = lineNotify.sendLineImageSPIF(client, "This image from device", "/sewing.jpg");
+
+  status = lineNotify.sendLineImageSPIF("This image from device", "/sewing.jpg");
   if (status == LineNotifyESP8266::LineStatus::SENT_COMPLETED)
   {
     Serial.println("Send image from SPIFS file completed");
@@ -152,11 +163,13 @@ void setup()
     Serial.println("Send image from SPIFS was failed!");
   else if (status == LineNotifyESP8266::LineStatus::CONNECTION_FAILED)
     Serial.println("Connection to LINE sevice faild!");
+  else if (status == LineNotifyESP8266::LineStatus::NOT_INITIALIZED)
+    Serial.println("Line notify was not initialized!");
   Serial.println();
 
   if (sdOK)
   {
-    status = lineNotify.sendLineImageSD(client, "This image from SD card", "/test.jpg");
+    status = lineNotify.sendLineImageSD("This image from SD card", "/test.jpg");
     if (status == LineNotifyESP8266::LineStatus::SENT_COMPLETED)
     {
       Serial.println("Send image from SD card completed");
@@ -169,8 +182,13 @@ void setup()
       Serial.println("Send image from SD card was failed!");
     else if (status == LineNotifyESP8266::LineStatus::CONNECTION_FAILED)
       Serial.println("Connection to LINE sevice faild!");
+    else if (status == LineNotifyESP8266::LineStatus::NOT_INITIALIZED)
+      Serial.println("Line notify was not initialized!");
     Serial.println();
   }
+
+
+  lineNotify.end();
 }
 
 void loop()

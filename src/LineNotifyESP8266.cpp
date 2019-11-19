@@ -1,7 +1,7 @@
 /*
- * LINE Notify Arduino Library for ESP8266 version 1.0.0
+ * LINE Notify Arduino Library for ESP8266 version 1.0.1
  * 
- * March 18, 2019
+ * November 19, 2019
  *
  * This library provides ESP8266 to perform REST API call to LINE Notify service to post the several message types.
  *
@@ -35,17 +35,28 @@
 #include "LineNotifyESP8266.h"
 
 LineNotifyESP8266::LineNotifyESP8266(){};
-LineNotifyESP8266 ::~LineNotifyESP8266() {}
+LineNotifyESP8266 ::~LineNotifyESP8266() 
+{
+  end();
+}
 
 void LineNotifyESP8266::end()
 {
   std::string().swap(_token);
 };
 
-void LineNotifyESP8266::init(const String &token)
+void LineNotifyESP8266::init(LineNotifyHTTPClient *net, const String &token)
 {
-  SPIFFS.begin();
+   SPIFFS.begin();
   _token = token.c_str();
+  _net = std::move(net);
+  char *host = new char[strlen_P(ESP8266_LINE_NOTIFY_STR_1) + 1];
+  memset(host, 0, strlen_P(ESP8266_LINE_NOTIFY_STR_1) + 1);
+  strcpy_P(host, ESP8266_LINE_NOTIFY_STR_1);
+
+  _net->begin(host, LINE_PORT);
+  _net->setRootCA(nullptr);
+  delete[] host;
 }
 
 void LineNotifyESP8266::setToken(const String &token)
@@ -53,8 +64,16 @@ void LineNotifyESP8266::setToken(const String &token)
   _token = token.c_str();
 }
 
-bool LineNotifyESP8266::send_request_header(WiFiClientSecure &client, const std::string &token, size_t contentLength)
+void LineNotifyESP8266::setSDSelectPin(uint8_t pin)
 {
+  _cs = pin;
+}
+
+bool LineNotifyESP8266::send_request_header(const std::string &token, size_t contentLength)
+{
+
+  if(_net== nullptr)
+  return false;
 
   std::string data = "";
   char *val = new char[10];
@@ -98,13 +117,10 @@ bool LineNotifyESP8266::send_request_header(WiFiClientSecure &client, const std:
   p_memCopy(data, ESP8266_LINE_NOTIFY_STR_4);
   p_memCopy(data, ESP8266_LINE_NOTIFY_STR_4);
 
-  int res = client.print(data.c_str());
-  int dlen = data.length();
-
+  int res = _net->sendRequest(data.c_str(),"");
   std::string().swap(data);
   delete[] val;
-
-  return res == dlen;
+  return res == 0;
 }
 
 void LineNotifyESP8266::set_multipart_header(std::string &data, const std::string &arg)
@@ -167,18 +183,11 @@ void LineNotifyESP8266::set_multipart_boundary(std::string &data)
   p_memCopy(data, ESP8266_LINE_NOTIFY_STR_4);
 }
 
-uint8_t LineNotifyESP8266::sendLineMessage(WiFiClientSecure &client, const String &msg)
+
+uint8_t LineNotifyESP8266::sendLineMessage(const String &msg)
 {
-
-  char *host = new char[strlen(ESP8266_LINE_NOTIFY_STR_1) + 1];
-  memset(host, 0, strlen(ESP8266_LINE_NOTIFY_STR_1) + 1);
-  strcpy_P(host, ESP8266_LINE_NOTIFY_STR_1);
-
-  if (!client.connect(host, LINE_PORT))
-  {
-    delete[] host;
-    return LineNotifyESP8266::LineStatus::CONNECTION_FAILED;
-  }
+  if(_net == nullptr)
+  return LineNotifyESP8266::LineStatus::NOT_INITIALIZED;
 
   char *arg = new char[50];
   memset(arg, 0, 50);
@@ -191,37 +200,31 @@ uint8_t LineNotifyESP8266::sendLineMessage(WiFiClientSecure &client, const Strin
   p_memCopy(textHeader, ESP8266_LINE_NOTIFY_STR_4);
   set_multipart_boundary(textHeader);
 
-  delete[] host;
   delete[] arg;
 
-  if (send_request_header(client, _token.c_str(), textHeader.length()))
+  if (send_request_header(_token.c_str(), textHeader.length()))
   {
 
-    client.print(textHeader.c_str());
+    int res =_net->sendRequest("",textHeader.c_str());
     std::string().swap(textHeader);
+    if(res < 0)
+      return LineNotifyESP8266::LineStatus::SENT_FAILED;
 
-    if (waitLineResponse(client))
+    if (waitLineResponse())
       return LineNotifyESP8266::LineStatus::SENT_COMPLETED;
     else
       return LineNotifyESP8266::LineStatus::SENT_FAILED;
   }
 
   std::string().swap(textHeader);
-  return LineNotifyESP8266::LineStatus::CONNECTION_FAILED;
+  return LineNotifyESP8266::LineStatus::SENT_FAILED;
 }
 
-uint8_t LineNotifyESP8266::sendLineSticker(WiFiClientSecure &client, const String &msg, uint16_t stickerPackageId, uint16_t stickerId)
+uint8_t LineNotifyESP8266::sendLineSticker(const String &msg, uint16_t stickerPackageId, uint16_t stickerId)
 {
 
-  char *host = new char[strlen(ESP8266_LINE_NOTIFY_STR_1) + 1];
-  memset(host, 0, strlen(ESP8266_LINE_NOTIFY_STR_1) + 1);
-  strcpy_P(host, ESP8266_LINE_NOTIFY_STR_1);
-
-  if (!client.connect(host, LINE_PORT))
-  {
-    delete[] host;
-    return LineNotifyESP8266::LineStatus::CONNECTION_FAILED;
-  }
+  if(_net == nullptr)
+  return LineNotifyESP8266::LineStatus::NOT_INITIALIZED;
 
   char *val = new char[20];
   std::string textHeader = "";
@@ -256,16 +259,16 @@ uint8_t LineNotifyESP8266::sendLineSticker(WiFiClientSecure &client, const Strin
 
   delete[] val;
   delete[] arg;
-  delete[] host;
 
-  if (send_request_header(client, _token, textHeader.length()))
+  if (send_request_header(_token, textHeader.length()))
   {
 
-    client.print(textHeader.c_str());
-
+    int res = _net->sendRequest("",textHeader.c_str());
     std::string().swap(textHeader);
+    if(res < 0)
+      return LineNotifyESP8266::LineStatus::SENT_FAILED;
 
-    if (waitLineResponse(client))
+    if (waitLineResponse())
       return LineNotifyESP8266::LineStatus::SENT_COMPLETED;
     else
       return LineNotifyESP8266::LineStatus::SENT_FAILED;
@@ -273,21 +276,14 @@ uint8_t LineNotifyESP8266::sendLineSticker(WiFiClientSecure &client, const Strin
 
   std::string().swap(textHeader);
 
-  return LineNotifyESP8266::LineStatus::CONNECTION_FAILED;
+  return LineNotifyESP8266::LineStatus::SENT_FAILED;
 }
 
-uint8_t LineNotifyESP8266::sendLineImageData(WiFiClientSecure &client, const String &msg, const String &fileName, const uint8_t *imageData, size_t imageLength)
+uint8_t LineNotifyESP8266::sendLineImageData(const String &msg, const String &fileName, const uint8_t *imageData, size_t imageLength)
 {
 
-  char *host = new char[strlen(ESP8266_LINE_NOTIFY_STR_1) + 1];
-  memset(host, 0, strlen(ESP8266_LINE_NOTIFY_STR_1) + 1);
-  strcpy_P(host, ESP8266_LINE_NOTIFY_STR_1);
-
-  if (!client.connect(host, LINE_PORT))
-  {
-    delete[] host;
-    return LineNotifyESP8266::LineStatus::CONNECTION_FAILED;
-  }
+  if(_net == nullptr)
+  return LineNotifyESP8266::LineStatus::NOT_INITIALIZED;
 
   std::string textHeader = "";
   std::string imageHeader = "";
@@ -307,28 +303,31 @@ uint8_t LineNotifyESP8266::sendLineImageData(WiFiClientSecure &client, const Str
 
   uint32_t contentLength = textHeader.length() + imageHeader.length() + imageLength + boundary.length();
 
-  if (send_request_header(client, _token, contentLength))
+  if (send_request_header(_token, contentLength))
   {
-
-    client.print(textHeader.c_str());
-
-    client.print(imageHeader.c_str());
-
     size_t chunkSize = 512;
-
     size_t byteRead = 0;
+
+    int res = _net->sendRequest("",textHeader.c_str());
+    if(res< 0)
+      goto failed;
+
+    res = _net->sendRequest("",imageHeader.c_str());
+    if(res< 0)
+      goto failed;
+
 
     while (byteRead < imageLength)
     {
       if (byteRead + chunkSize < imageLength)
       {
-        client.write(imageData, chunkSize);
+        _net->_client->write(imageData, chunkSize);
         imageData += chunkSize;
         byteRead += chunkSize;
       }
       else
       {
-        client.write(imageData, imageLength - byteRead);
+        _net->_client->write(imageData, imageLength - byteRead);
         imageData += chunkSize;
         byteRead = imageLength;
       }
@@ -338,17 +337,25 @@ uint8_t LineNotifyESP8266::sendLineImageData(WiFiClientSecure &client, const Str
     memset(arg, 0, 50);
     strcpy_P(arg, ESP8266_LINE_NOTIFY_STR_4);
 
-    client.print(arg);
+  
+    res = _net->sendRequest("",arg);
+    if(res< 0)
+      goto failed;
 
-    client.print(boundary.c_str());
+    res = _net->sendRequest("",boundary.c_str());
 
+
+failed:
     std::string().swap(textHeader);
     std::string().swap(imageHeader);
     std::string().swap(boundary);
-    delete[] host;
+  
     delete[] arg;
 
-    if (waitLineResponse(client))
+    if(res < 0)
+      return LineNotifyESP8266::LineStatus::SENT_FAILED;
+
+    if (waitLineResponse())
       return LineNotifyESP8266::LineStatus::SENT_COMPLETED;
     else
       return LineNotifyESP8266::LineStatus::SENT_FAILED;
@@ -357,24 +364,16 @@ uint8_t LineNotifyESP8266::sendLineImageData(WiFiClientSecure &client, const Str
   std::string().swap(textHeader);
   std::string().swap(imageHeader);
   std::string().swap(boundary);
-  delete[] host;
   delete[] arg;
 
-  return LineNotifyESP8266::LineStatus::CONNECTION_FAILED;
+  return LineNotifyESP8266::LineStatus::SENT_FAILED;
 }
 
-uint8_t LineNotifyESP8266::sendLineImageURL(WiFiClientSecure &client, const String &msg, const String &imageURL)
+uint8_t LineNotifyESP8266::sendLineImageURL(const String &msg, const String &imageURL)
 {
 
-  char *host = new char[strlen(ESP8266_LINE_NOTIFY_STR_1) + 1];
-  memset(host, 0, strlen(ESP8266_LINE_NOTIFY_STR_1) + 1);
-  strcpy_P(host, ESP8266_LINE_NOTIFY_STR_1);
-
-  if (!client.connect(host, LINE_PORT))
-  {
-    delete[] host;
-    return LineNotifyESP8266::LineStatus::CONNECTION_FAILED;
-  }
+  if(_net == nullptr)
+    return LineNotifyESP8266::LineStatus::NOT_INITIALIZED;
 
   std::string textHeader = "";
   char *arg = new char[50];
@@ -401,27 +400,26 @@ uint8_t LineNotifyESP8266::sendLineImageURL(WiFiClientSecure &client, const Stri
 
   set_multipart_boundary(textHeader);
 
-  if (send_request_header(client, _token, textHeader.length()))
+  if (send_request_header(_token, textHeader.length()))
   {
 
-    client.print(textHeader.c_str());
+    int res =_net->sendRequest("",textHeader.c_str());
     std::string().swap(textHeader);
-    delete[] host;
     delete[] arg;
-
-    if (waitLineResponse(client))
+    if(res < 0)
+      return LineNotifyESP8266::LineStatus::SENT_FAILED;
+    if (waitLineResponse())
       return LineNotifyESP8266::LineStatus::SENT_COMPLETED;
     else
       return LineNotifyESP8266::LineStatus::SENT_FAILED;
   }
 
   std::string().swap(textHeader);
-  delete[] host;
   delete[] arg;
-  return LineNotifyESP8266::LineStatus::CONNECTION_FAILED;
+  return LineNotifyESP8266::LineStatus::SENT_FAILED;
 }
 
-uint8_t LineNotifyESP8266::sendLineImageFile(WiFiClientSecure &client, const String &msg, const String &filePath, bool internal)
+uint8_t LineNotifyESP8266::sendLineImageFile(const String &msg, const String &filePath, bool internal)
 {
   bool fileExisted = false;
 
@@ -459,15 +457,8 @@ uint8_t LineNotifyESP8266::sendLineImageFile(WiFiClientSecure &client, const Str
       imageLength = file.size();
     }
 
-    char *host = new char[strlen(ESP8266_LINE_NOTIFY_STR_1) + 1];
-    memset(host, 0, strlen(ESP8266_LINE_NOTIFY_STR_1) + 1);
-    strcpy_P(host, ESP8266_LINE_NOTIFY_STR_1);
-
-    if (!client.connect(host, LINE_PORT))
-    {
-      delete[] host;
-      return LineNotifyESP8266::LineStatus::CONNECTION_FAILED;
-    }
+    if(_net == nullptr)
+      return LineNotifyESP8266::LineStatus::NOT_INITIALIZED;
 
     char *arg = new char[50];
     memset(arg, 0, 50);
@@ -483,16 +474,17 @@ uint8_t LineNotifyESP8266::sendLineImageFile(WiFiClientSecure &client, const Str
 
     uint32_t contentLength = textHeader.length() + imageHeader.length() + imageLength + boundary.length();
 
-    if (send_request_header(client, _token, contentLength))
+    if (send_request_header(_token, contentLength))
     {
-
-      client.print(textHeader.c_str());
-
-      client.print(imageHeader.c_str());
-
       size_t chunkSize = 256;
       uint8_t *chunk = new uint8_t[chunkSize];
       size_t byteRead = 0;
+
+      int res = _net->sendRequest("",textHeader.c_str());
+      if(res < 0) goto failed;
+
+      res = _net->sendRequest("",imageHeader.c_str());
+      if(res < 0) goto failed;
 
       while (byteRead < imageLength)
       {
@@ -504,7 +496,7 @@ uint8_t LineNotifyESP8266::sendLineImageFile(WiFiClientSecure &client, const Str
           else
             file.read(chunk, chunkSize);
 
-          client.write(chunk, chunkSize);
+          _net->_client->write(chunk, chunkSize);
           byteRead += chunkSize;
         }
         else
@@ -514,7 +506,7 @@ uint8_t LineNotifyESP8266::sendLineImageFile(WiFiClientSecure &client, const Str
           else
             file.read(chunk, imageLength - byteRead);
 
-          client.write(chunk, imageLength - byteRead);
+          _net->_client->write(chunk, imageLength - byteRead);
           byteRead = imageLength;
           break;
         }
@@ -531,17 +523,22 @@ uint8_t LineNotifyESP8266::sendLineImageFile(WiFiClientSecure &client, const Str
       memset(arg, 0, 50);
       strcpy_P(arg, ESP8266_LINE_NOTIFY_STR_4);
 
-      client.print(arg);
+      _net->sendRequest("",arg);
+      if(res < 0) goto failed;
 
-      client.print(boundary.c_str());
+      _net->sendRequest("",boundary.c_str());
+
+      failed:
 
       std::string().swap(textHeader);
       std::string().swap(imageHeader);
       std::string().swap(boundary);
-      delete[] host;
       delete[] arg;
 
-      if (waitLineResponse(client))
+      if(res < 0)
+        return LineNotifyESP8266::LineStatus::SENT_FAILED;
+
+      if (waitLineResponse())
         return LineNotifyESP8266::LineStatus::SENT_COMPLETED;
       else
         return LineNotifyESP8266::LineStatus::SENT_FAILED;
@@ -551,23 +548,23 @@ uint8_t LineNotifyESP8266::sendLineImageFile(WiFiClientSecure &client, const Str
     std::string().swap(imageHeader);
     std::string().swap(boundary);
 
-    delete[] host;
     delete[] arg;
     return LineNotifyESP8266::LineStatus::CONNECTION_FAILED;
   }
+  return LineNotifyESP8266::LineStatus::SENT_FAILED;
 }
 
-uint8_t LineNotifyESP8266::sendLineImageSPIF(WiFiClientSecure &client, const String &msg, const String &filePath)
+uint8_t LineNotifyESP8266::sendLineImageSPIF(const String &msg, const String &filePath)
 {
-  return sendLineImageFile(client, msg, filePath, true);
+  return sendLineImageFile(msg, filePath, true);
 }
 
-uint8_t LineNotifyESP8266::sendLineImageSD(WiFiClientSecure &client, const String &msg, const String &filePath)
+uint8_t LineNotifyESP8266::sendLineImageSD(const String &msg, const String &filePath)
 {
-  return sendLineImageFile(client, msg, filePath, false);
+  return sendLineImageFile(msg, filePath, false);
 }
 
-bool LineNotifyESP8266::waitLineResponse(WiFiClientSecure &client)
+bool LineNotifyESP8266::waitLineResponse()
 {
 
   size_t resSize = 200;
@@ -588,18 +585,25 @@ bool LineNotifyESP8266::waitLineResponse(WiFiClientSecure &client)
   _imageLimit = 0;
   _imageRemaining = 0;
 
-  while (client.connected() && !client.available() && millis() - dataTime < 5000)
-    delay(1);
+  while (_net->_client->connected() && !_net->_client->available() && millis() - dataTime < 5000)
+    delay(0);
 
   dataTime = millis();
-  if (client.connected() && client.available())
+  if (_net->_client->connected() && _net->_client->available())
   {
-    while (client.available())
+    while (_net->_client->available())
     {
 
-      yield();
+      delay(0);
 
-      c = client.read();
+      int res = _net->_client->read();
+
+      if(res < 0)
+      continue;
+
+      c = (char)res;
+
+
       if (c != '\r' && c != '\n')
         strcat_c(lineBuf, c);
 
@@ -689,14 +693,13 @@ bool LineNotifyESP8266::waitLineResponse(WiFiClientSecure &client)
 void LineNotifyESP8266::getContentType(const std::string &filename, std::string &buf)
 {
   bool flag = false;
-  bool match = false;
   size_t bufSize = 50;
   char *tmp = new char[bufSize];
   memset(tmp, 0, bufSize);
 
   strcpy_P(tmp, ESP8266_LINE_NOTIFY_STR_35);
 
-  int p1 = filename.find_last_of(tmp);
+  size_t p1 = filename.find_last_of(tmp);
   if (p1 != std::string::npos)
   {
     memset(tmp, 0, bufSize);
@@ -774,14 +777,14 @@ uint16_t LineNotifyESP8266::imageMessageRemaining(void)
   return _imageRemaining;
 }
 
-void LineNotifyESP8266::p_memCopy(std::string &buf, const char *p, bool empty)
+void LineNotifyESP8266::p_memCopy(std::string &buf, PGM_P p, bool empty)
 {
   if (empty)
     buf.clear();
-  size_t len = strlen(p) + 1;
+  size_t len = strlen_P(p) + 1;
   char *b = new char[len];
   memset(b, 0, len);
-  strcpy(b, p);
+  strcpy_P(b, p);
   buf += b;
   delete[] b;
 }
@@ -792,7 +795,7 @@ bool LineNotifyESP8266::sdTest()
   std::string filepath = "";
   p_memCopy(filepath, ESP8266_LINE_NOTIFY_STR_43, true);
 
-  SD.begin();
+  SD.begin(_cs);
 
   file = SD.open(filepath.c_str(), FILE_WRITE);
   if (!file)
@@ -833,53 +836,50 @@ void LineNotifyESP8266::strcat_c(char *str, char c)
 }
 int LineNotifyESP8266::strpos(const char *haystack, const char *needle, int offset)
 {
-  char _haystack[strlen(haystack)];
-  strncpy(_haystack, haystack + offset, strlen(haystack) - offset);
-  char *p = strstr(_haystack, needle);
-  if (p)
-    return p - _haystack + offset;
-  return -1;
+    size_t len = strlen(haystack);
+    char *_haystack = new char[len];
+    memset(_haystack, 0, len);
+    strncpy(_haystack, haystack + offset, strlen(haystack) - offset);
+    char *p = strstr(_haystack, needle);
+    int r = -1;
+    if (p)
+        r = p - _haystack + offset;
+    delete[] _haystack;
+    return r;
 }
 
 int LineNotifyESP8266::rstrpos(const char *haystack, const char *needle, int offset)
 {
-  char _haystack[strlen(haystack)];
-  strncpy(_haystack, haystack + offset, strlen(haystack) - offset);
-  char *p = rstrstr(_haystack, needle);
-  if (p)
-    return p - _haystack + offset;
-  return -1;
+    size_t len = strlen(haystack);
+    char *_haystack = new char[len];
+    memset(_haystack, 0, len);
+    strncpy(_haystack, haystack + offset, len - offset);
+    char *p = rstrstr(_haystack, needle);
+    int r = -1;
+    if (p)
+        r = p - _haystack + offset;
+    delete[] _haystack;
+    return r;
 }
-
 char *LineNotifyESP8266::rstrstr(const char *haystack, const char *needle)
 {
-  int needle_length = strlen(needle);
-  const char *haystack_end = haystack + strlen(haystack) - needle_length;
-  const char *p;
-  size_t i;
-  for (p = haystack_end; p >= haystack; --p)
-  {
-    for (i = 0; i < needle_length; ++i)
+    size_t needle_length = strlen(needle);
+    const char *haystack_end = haystack + strlen(haystack) - needle_length;
+    const char *p;
+    size_t i;
+    for (p = haystack_end; p >= haystack; --p)
     {
-      if (p[i] != needle[i])
-        goto next;
+        for (i = 0; i < needle_length; ++i)
+        {
+            if (p[i] != needle[i])
+                goto next;
+        }
+        return (char *)p;
+    next:;
     }
-    return (char *)p;
-  next:;
-  }
-  return 0;
+    return 0;
 }
-char *LineNotifyESP8266::replace_char(char *str, char in, char out)
-{
-  char *p = str;
-  while (p != '\0')
-  {
-    if (*p == in)
-      *p == out;
-    ++p;
-  }
-  return str;
-}
+
 
 LineNotifyESP8266 lineNotify = LineNotifyESP8266();
 

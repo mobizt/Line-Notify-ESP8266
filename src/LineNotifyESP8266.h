@@ -1,7 +1,7 @@
 /*
- * LINE Notify Arduino Library for ESP8266 version 1.0.0
+ * LINE Notify Arduino Library for ESP8266 version 1.0.1
  * 
- * March 18, 2019
+ * November 19, 2019
  *
  * This library provides ESP8266 to perform REST API call to LINE Notify service to post the several message types.
  *
@@ -33,22 +33,10 @@
 #define LineNotifyESP8266_H
 
 #include <Arduino.h>
-#include <Arduino.h>
-#if ARDUINO_ESP8266_GIT_VER == 0xbb28d4a3 || ARDUINO_ESP8266_GIT_VER == 0x614f7c32 || ARDUINO_ESP8266_GIT_VER == 0x4ceabea9 //2.4.0, 2.4.1, 2.4.2
-#include <WiFiClientSecure.h>
-#else
-#include <WiFiClientSecureAxTLS.h>
-using namespace axTLS;
-#endif
 
-#if ARDUINO_ESP8266_GIT_VER != 0xbb28d4a3 && ARDUINO_ESP8266_GIT_VER != 0x614f7c32 && ARDUINO_ESP8266_GIT_VER != 0x4ceabea9 //2.4.0, 2.4.1, 2.4.2
-#define USING_AXTLS
-#endif
 #include <ESP8266WiFi.h>
-#define FS_NO_GLOBALS
-#include <FS.h>
-#include <SD.h>
-#include <vector>
+#include "LineNotifyESP8266HTTPClient.h"
+
 
 static const char ESP8266_LINE_NOTIFY_STR_1[] PROGMEM = "notify-api.line.me";
 static const char ESP8266_LINE_NOTIFY_STR_2[] PROGMEM = "{BOUNDARY}";
@@ -103,6 +91,7 @@ public:
     static const uint8_t SENT_COMPLETED = 0;
     static const uint8_t SENT_FAILED = 1;
     static const uint8_t CONNECTION_FAILED = 2;
+    static const uint8_t NOT_INITIALIZED = 3;
   };
 
   LineNotifyESP8266();
@@ -112,11 +101,13 @@ public:
    
     The LINE Notify Service's credentials initialization.
 
+    param net - LineNotifyHTTPClient object pointer.
+
     @param token - LINE Notify token String.
 
   */
   void
-  init(const String &token);
+  init(LineNotifyHTTPClient *net, const String &token);
 
   /*
 
@@ -127,23 +118,31 @@ public:
   */
   void setToken(const String &token);
 
+
+  /*
+
+    Set SD select pin.
+
+    @param pin - GPIO that used for SD select pin.
+
+  */
+  void setSDSelectPin(uint8_t pin);
+
   /*
    
     Send text message.
    
-    @param client - SSL WiFi client from WiFiClientSecure initialization.
     @param msg - The text message String to be send.
     
     @return The LineStatus structed value, SENT_COMPLETED = 0, SENT_FAILED = 1, CONNECTION_FAILED = 2.
    
   */
-  uint8_t sendLineMessage(WiFiClientSecure &client, const String &msg);
+  uint8_t sendLineMessage(const String &msg);
 
   /*
 
     Send text message with sticker.
 
-    @param client - SSL WiFi client from WiFiClientSecure initialization.
     @param msg - The text message String to be send.
     @param stickerPackageId - Sticker Package ID number to send, see https://devdocs.line.me/files/sticker_list.pdf for STKPKGID
     @param stickerId - Sticker ID number to send, see https://devdocs.line.me/files/sticker_list.pdf for STKID
@@ -151,13 +150,13 @@ public:
     return The LineStatus structed value, SENT_COMPLETED = 0, SENT_FAILED = 1, CONNECTION_FAILED = 2.
 
   */
-  uint8_t sendLineSticker(WiFiClientSecure &client, const String &msg, uint16_t stickerPackageId, uint16_t stickerId);
+  uint8_t sendLineSticker(const String &msg, uint16_t stickerPackageId, uint16_t stickerId);
 
   /*
 
     Send Image message. The image data from flash memory or EEPROM
 
-    @param client - SSL WiFi client from WiFiClientSecure initialization.
+    
     @param msg - The text message String to be send.
     @param fileName - The user's specified file name String.
     @param imageData - The byte data of image from memory or EEPROM.
@@ -166,45 +165,43 @@ public:
     @return The LineStatus structed value, SENT_COMPLETED = 0, SENT_FAILED = 1, CONNECTION_FAILED = 2.
 
   */
-  uint8_t sendLineImageData(WiFiClientSecure &client, const String &msg, const String &fileName, const uint8_t *imageData, size_t imageLength);
+  uint8_t sendLineImageData(const String &msg, const String &fileName, const uint8_t *imageData, size_t imageLength);
 
   /**
     Send Image message. The image data from web URL.
 
-    @param client - SSL WiFi client from WiFiClientSecure initialization.
     @param msg - The text message String to be send.
     @param imageURL - The image URL String.
 
     @return The LineStatus structed value, SENT_COMPLETED = 0, SENT_FAILED = 1, CONNECTION_FAILED = 2.
 
   */
-  uint8_t sendLineImageURL(WiFiClientSecure &client, const String &msg, const String &imageURL);
+  uint8_t sendLineImageURL(const String &msg, const String &imageURL);
 
   /*
 
     Send Image message. The image data from SPI Flash File.
 
-    @param client - SSL WiFi client from WiFiClientSecure initialization.
     @param msg - The text message String to be send.
     @param filePath - The image file name and path String inside SPIF.
 
     @return The LineStatus structed value, SENT_COMPLETED = 0, SENT_FAILED = 1, CONNECTION_FAILED = 2.
 
   */
-  uint8_t sendLineImageSPIF(WiFiClientSecure &client, const String &msg, const String &filePath);
+  uint8_t sendLineImageSPIF(const String &msg, const String &filePath);
 
   /*
 
     Send Image message. The image data from SD card File.
 
-    @param client - SSL WiFi client from WiFiClientSecure initialization.
+
     @param msg - The text message String to be send.
     @param filePath - The image file name and path String inside SD card.
 
     @return The LineStatus structed value, SENT_COMPLETED = 0, SENT_FAILED = 1, CONNECTION_FAILED = 2.
 
   */
-  uint8_t sendLineImageSD(WiFiClientSecure &client, const String &msg, const String &filePath);
+  uint8_t sendLineImageSD(const String &msg, const String &filePath);
 
   /*
     Get the text message limit.
@@ -251,22 +248,24 @@ private:
   int _imageLimit;
   int _textRemaining;
   int _imageRemaining;
+  uint8_t _cs = 15;
+  LineNotifyHTTPClient *_net = nullptr;
+  
 
-  uint8_t sendLineImageFile(WiFiClientSecure &client, const String &msg, const String &filePath, bool internal);
+  uint8_t sendLineImageFile(const String &msg, const String &filePath, bool internal);
   bool sdTest();
-  bool send_request_header(WiFiClientSecure &client, const std::string &token, size_t contentLength);
+  bool send_request_header(const std::string &token, size_t contentLength);
   void set_multipart_header(std::string &data, const std::string &arg);
   void set_multipart_boundary(std::string &data);
-  bool waitLineResponse(WiFiClientSecure &client);
+  bool waitLineResponse();
   void getContentType(const std::string &filename, std::string &buf);
   inline std::string trim(std::string &str);
-  void p_memCopy(std::string &buf, const char *p, bool empty = false);
+  void p_memCopy(std::string &buf, PGM_P p, bool empty = false);
 
   void strcat_c(char *str, char c);
   int strpos(const char *haystack, const char *needle, int offset);
   int rstrpos(const char *haystack, const char *needle, int offset);
   char *rstrstr(const char *haystack, const char *needle);
-  char *replace_char(char *str, char in, char out);
 };
 
 extern LineNotifyESP8266 lineNotify;

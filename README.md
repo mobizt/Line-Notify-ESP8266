@@ -1,4 +1,4 @@
-# LINE Notify Arduino Library for ESP8266 version 1.0.0
+# LINE Notify Arduino Library for ESP8266 version 1.0.1
 
 This Arduino library allows ESP8266 to send LINE Notify message, sticker, SPIFS (flash) and SD card images.
 
@@ -47,10 +47,12 @@ See [full examples](https://github.com/mobizt/Line-Notify-ESP8266/tree/master/ex
 
 **The LINE Notify Service's credentials initialization.**
 
+param *`net`* - LineNotifyHTTPClient object pointer.
+
 param *`token`* - LINE Notify token String.
 
 ```C++
-init(const String &token);
+init(LineNotifyHTTPClient *net, const String &token);
 ```
 
 
@@ -67,25 +69,30 @@ void setToken(const String &token);
 
 
 
+**Set SD select pin.**
+
+param *`pin`* - GPIO that used for SD select pin.
+
+```C++
+void setSDSelectPin(uint8_t pin);
+```
+
+
 
 **Send text message.**
-   
-param *`client`* - SSL WiFi client from WiFiClientSecure initialization.
 
 param *`msg`* - The text message String to be send.
     
 return *`The LineStatus structed value`*, SENT_COMPLETED = 0, SENT_FAILED = 1, CONNECTION_FAILED = 2.
 
 ```C++
-uint8_t sendLineMessage(HTTPClientESP8266Ex &http, const String &msg);
+uint8_t sendLineMessage(const String &msg);
 ```
 
 
 
 
 **Send text message with sticker.**
-
-param *`client`* - SSL WiFi client from WiFiClientSecure initialization.
 
 param *`msg`* - The text message String to be send.
 
@@ -96,15 +103,13 @@ param *`stickerId`* - Sticker ID number to send, see https://devdocs.line.me/fil
 return *`The LineStatus structed value`*, SENT_COMPLETED = 0, SENT_FAILED = 1, CONNECTION_FAILED = 2.
 
 ```C++
-uint8_t sendLineSticker(HTTPClientESP8266Ex &http, const String &msg, uint16_t stickerPackageId, uint16_t stickerId);
+uint8_t sendLineSticker(const String &msg, uint16_t stickerPackageId, uint16_t stickerId);
 ```
 
 
 
 
 **Send Image message. The image data from flash memory or EEPROM**
-
-param *`client`* - SSL WiFi client from WiFiClientSecure initialization.
 
 param *`msg`* - The text message String to be send.
 
@@ -117,15 +122,13 @@ param *`imageLength`* - The byte length of image data.
 return *`The LineStatus structed value`*, SENT_COMPLETED = 0, SENT_FAILED = 1, CONNECTION_FAILED = 2.
 
 ```C++
-uint8_t sendLineImageData(HTTPClientESP8266Ex &http, const String &msg, const String &fileName, const uint8_t *imageData, size_t imageLength);
+uint8_t sendLineImageData(const String &msg, const String &fileName, const uint8_t *imageData, size_t imageLength);
 ```
 
 
 
 
 **Send Image message. The image data from web URL.**
-
-param *`client`* - SSL WiFi client from WiFiClientSecure initialization.
 
 param *`msg`* - The text message String to be send.
 
@@ -134,15 +137,13 @@ param *`imageURL`* - The image URL String.
 return *`The LineStatus structed value`*, SENT_COMPLETED = 0, SENT_FAILED = 1, CONNECTION_FAILED = 2.
 
 ```C++
-uint8_t sendLineImageURL(HTTPClientESP8266Ex &http, const String &msg, const String &imageURL);
+uint8_t sendLineImageURL(const String &msg, const String &imageURL);
 ```
 
 
 
 
 **Send Image message. The image data from SPI Flash File.**
-
-param *`client`* - SSL WiFi client from WiFiClientSecure initialization.
 
 param *`msg`* - The text message String to be send.
 
@@ -151,15 +152,13 @@ param *`filePath`* - The image file name and path String inside SPIF.
 return *`The LineStatus structed value`*, SENT_COMPLETED = 0, SENT_FAILED = 1, CONNECTION_FAILED = 2.
 
 ```C++
-uint8_t sendLineImageSPIF(HTTPClientESP8266Ex &http, const String &msg, const String &filePath);
+uint8_t sendLineImageSPIF(const String &msg, const String &filePath);
 ```
 
 
 
 
 **Send Image message. The image data from SD card File.**
-
-param *`client`* - SSL WiFi client from WiFiClientSecure initialization.
 
 param *`msg`* - The text message String to be send.
 
@@ -168,7 +167,7 @@ param *`filePath`* - The image file name and path String inside SD card.
 return *`The LineStatus structed value`*, SENT_COMPLETED = 0, SENT_FAILED = 1, CONNECTION_FAILED = 2.
 
 ```C++
-uint8_t sendLineImageSD(HTTPClientESP8266Ex &http, const String &msg, const String &filePath);
+uint8_t sendLineImageSD(const String &msg, const String &filePath);
 ```
 
 
