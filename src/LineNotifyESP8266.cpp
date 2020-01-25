@@ -1,7 +1,7 @@
 /*
- * LINE Notify Arduino Library for ESP8266 version 1.0.1
+ * LINE Notify Arduino Library for ESP8266 version 1.0.2
  * 
- * November 19, 2019
+ * January 26, 2020
  *
  * This library provides ESP8266 to perform REST API call to LINE Notify service to post the several message types.
  *
@@ -209,6 +209,7 @@ uint8_t LineNotifyESP8266::sendLineMessage(const String &msg)
     std::string().swap(textHeader);
     if(res < 0)
       return LineNotifyESP8266::LineStatus::SENT_FAILED;
+      
 
     if (waitLineResponse())
       return LineNotifyESP8266::LineStatus::SENT_COMPLETED;
@@ -567,7 +568,7 @@ uint8_t LineNotifyESP8266::sendLineImageSD(const String &msg, const String &file
 bool LineNotifyESP8266::waitLineResponse()
 {
 
-  size_t resSize = 200;
+  size_t resSize = 400;
   size_t bufSize = 50;
   char *lineBuf = new char[resSize];
   memset(lineBuf, 0, resSize);
@@ -603,7 +604,6 @@ bool LineNotifyESP8266::waitLineResponse()
 
       c = (char)res;
 
-
       if (c != '\r' && c != '\n')
         strcat_c(lineBuf, c);
 
@@ -614,7 +614,7 @@ bool LineNotifyESP8266::waitLineResponse()
 
         memset(tmp, 0, bufSize);
         strcpy_P(tmp, ESP8266_LINE_NOTIFY_STR_36);
-
+         
         p1 = strpos(lineBuf, tmp, 0);
         if (p1 != -1)
         {
@@ -671,10 +671,12 @@ bool LineNotifyESP8266::waitLineResponse()
             strncpy(tmp, lineBuf + p1 + strlen(ESP8266_LINE_NOTIFY_STR_41), strlen(lineBuf) - p1 - strlen(ESP8266_LINE_NOTIFY_STR_41));
             _imageRemaining = atoi(tmp);
           }
+
         }
 
         memset(lineBuf, 0, resSize);
       }
+      
 
       if (millis() - dataTime > 5000)
       {
@@ -837,6 +839,9 @@ void LineNotifyESP8266::strcat_c(char *str, char c)
 int LineNotifyESP8266::strpos(const char *haystack, const char *needle, int offset)
 {
     size_t len = strlen(haystack);
+    size_t len2 = strlen(needle);
+    if (len == 0 || len < len2 || len2 == 0)
+        return -1;
     char *_haystack = new char[len];
     memset(_haystack, 0, len);
     strncpy(_haystack, haystack + offset, strlen(haystack) - offset);
@@ -851,6 +856,9 @@ int LineNotifyESP8266::strpos(const char *haystack, const char *needle, int offs
 int LineNotifyESP8266::rstrpos(const char *haystack, const char *needle, int offset)
 {
     size_t len = strlen(haystack);
+    size_t len2 = strlen(needle);
+    if (len == 0 || len < len2 || len2 == 0)
+        return -1;
     char *_haystack = new char[len];
     memset(_haystack, 0, len);
     strncpy(_haystack, haystack + offset, len - offset);
